@@ -1,16 +1,15 @@
-#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/_types.h>
 #include <unistd.h>
 #include <string.h>
 
-// Functions that might be used
 char *readLine(void);
 char **parseLine(char *line);
 void exitShell(void);
 int executeLine(char **tokenizedLine);
 
+// Globale variabler, refaktorerer kanskje program slik at disse ikke blir nødvendige
 int numberOfArgs = 0;
 int exitStatus = 1;
 
@@ -21,9 +20,10 @@ int main(void)
   char cwd[1024];
   char *userName = getlogin();
   char hostName[1024];
+  gethostname(hostName, sizeof(hostName));
+
   char *line;
   char **tokens;
-  gethostname(hostName, sizeof(hostName));
 
   do
   {
