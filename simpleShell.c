@@ -3,11 +3,16 @@
 #include <stdlib.h>
 #include <sys/_types.h>
 #include <unistd.h>
+#include <string.h>
 
 // Functions that might be used
-char *readLine();
+char *readLine(void);
+char **parseLine(char *line);
 
-int main(void) {
+int numberOfArgs = 0;
+
+int main(void)
+{
 
   // Strings for shell-prompten
   char cwd[1024];
@@ -15,12 +20,15 @@ int main(void) {
   char hostName[1024];
   gethostname(hostName, sizeof(hostName));
 
-  do {
-
+  do
+  {
     // Henter nåværende arbeidskatalog
-    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+    if (getcwd(cwd, sizeof(cwd)) != NULL)
+    {
       printf("%s@%s %s\n> $ ", userName, hostName, cwd);
-    } else {
+    }
+    else
+    {
       perror("getcwd() error");
       exit(EXIT_FAILURE);
     }
@@ -30,33 +38,40 @@ int main(void) {
     // Newline etter hver prompt
     printf("\n");
 
+    // Må settes til 0, etter hver iterasjon for riktig tokenizing
+    numberOfArgs = 0;
   } while (1);
 
   return 0;
 }
 
-char *readLine() {
+char *readLine(void)
+{
 
   int bufSize = 1024;
   char *buffer = malloc(bufSize * sizeof(char));
   int position = 0;
 
-  if (buffer == NULL) {
+  if (buffer == NULL)
+  {
     fprintf(stderr, "Error allocating memory\n");
     exit(EXIT_FAILURE);
   }
 
   // While-løkke som leser tegn for tegn
   int ch;
-  while ((ch = getchar()) != EOF && ch != '\n') {
+  while ((ch = getchar()) != EOF && ch != '\n')
+  {
 
     buffer[position] = (char)ch;
     position++;
 
-    if (position > bufSize) {
+    if (position > bufSize)
+    {
       bufSize += 1024;
       buffer = realloc(buffer, bufSize);
-      if (buffer == NULL) {
+      if (buffer == NULL)
+      {
         fprintf(stderr, "Error reallocating memory\n");
         exit(EXIT_FAILURE);
       }
@@ -67,4 +82,47 @@ char *readLine() {
   buffer[position] = '\0';
 
   return buffer;
+}
+
+char **parseLine(char *line)
+{
+  char **tokens = NULL;
+  char *currentToken;
+
+  tokens = malloc(sizeof(char *));
+  if (tokens == NULL)
+  {
+    fprintf(stderr, "Error allocating memory\n");
+    exit(EXIT_FAILURE);
+  }
+
+  // int tokenIndex = 0;
+  currentToken = strtok(line, " ");
+  while (currentToken != NULL)
+  {
+    // Allokerer minne for currentToken
+    // Pluss 1 for '\0'
+    tokens[numberOfArgs] = malloc((strlen(currentToken) + 1) * sizeof(char));
+    if (tokens[numberOfArgs] == NULL)
+    {
+      fprintf(stderr, "Error allocating memory\n");
+      exit(EXIT_FAILURE);
+    }
+
+    // Kopierer token inn til tokens-array
+    strcpy(tokens[numberOfArgs], currentToken);
+    numberOfArgs++;
+
+    tokens = realloc(tokens, (numberOfArgs + 1) * sizeof(char *));
+    if (tokens == NULL)
+    {
+      fprintf(stderr, "Error allocating memory\n");
+      exit(EXIT_FAILURE);
+    }
+
+    currentToken = strtok(NULL, " ");
+  }
+
+  tokens[numberOfArgs] = NULL;
+  return tokens;
 }
