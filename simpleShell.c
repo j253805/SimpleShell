@@ -8,8 +8,11 @@
 // Functions that might be used
 char *readLine(void);
 char **parseLine(char *line);
+void exitShell(void);
+int executeLine(char **tokenizedLine);
 
 int numberOfArgs = 0;
+int exitStatus = 1;
 
 int main(void)
 {
@@ -18,6 +21,8 @@ int main(void)
   char cwd[1024];
   char *userName = getlogin();
   char hostName[1024];
+  char *line;
+  char **tokens;
   gethostname(hostName, sizeof(hostName));
 
   do
@@ -26,6 +31,9 @@ int main(void)
     if (getcwd(cwd, sizeof(cwd)) != NULL)
     {
       printf("%s@%s %s\n> $ ", userName, hostName, cwd);
+      line = readLine();
+      tokens = parseLine(line);
+      executeLine(tokens);
     }
     else
     {
@@ -40,7 +48,7 @@ int main(void)
 
     // Må settes til 0, etter hver iterasjon for riktig tokenizing
     numberOfArgs = 0;
-  } while (1);
+  } while (exitStatus);
 
   return 0;
 }
@@ -125,4 +133,39 @@ char **parseLine(char *line)
 
   tokens[numberOfArgs] = NULL;
   return tokens;
+}
+
+void exitShell(void)
+{
+  exitStatus = 0;
+}
+
+int executeLine(char **tokenizedLine)
+{
+  // Om program skal avsluttes
+  if (strcmp(tokenizedLine[0], "exit") == 0)
+  {
+    exitShell();
+  }
+
+  pid_t childPID;
+  int status;
+
+  childPID = fork();
+  // I barneprosess, vi bryr oss ikke om forelder
+  if (childPID == 0)
+  {
+    execvp(tokenizedLine[0], tokenizedLine);
+  }
+  else if (childPID < 0)
+  {
+    perror("Error on fork");
+    exit(EXIT_FAILURE);
+  }
+  else
+  {
+    waitpid(childPID, &status, WUNTRACED);
+  }
+
+  return 1;
 }
