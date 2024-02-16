@@ -8,6 +8,7 @@ char *readLine(void);
 char **parseLine(char *line);
 void exitShell(void);
 int executeLine(char **tokenizedLine);
+void freeTokens(char **tokens);
 
 // Globale variabler, refaktorerer kanskje program slik at disse ikke blir nødvendige
 int numberOfArgs = 0;
@@ -40,14 +41,16 @@ int main(void)
       perror("getcwd() error");
       exit(EXIT_FAILURE);
     }
-    // Henter hostname
-    gethostname(hostName, sizeof(hostName));
 
     // Newline etter hver prompt
     printf("\n");
 
     // Må settes til 0, etter hver iterasjon for riktig tokenizing
     numberOfArgs = 0;
+
+    // Frigjør minne
+    free(line);
+    freeTokens(tokens);
   } while (exitStatus);
 
   return 0;
@@ -55,7 +58,6 @@ int main(void)
 
 char *readLine(void)
 {
-
   int bufSize = 1024;
   char *buffer = malloc(bufSize * sizeof(char));
   int position = 0;
@@ -70,10 +72,6 @@ char *readLine(void)
   int ch;
   while ((ch = getchar()) != EOF && ch != '\n')
   {
-
-    buffer[position] = (char)ch;
-    position++;
-
     if (position > bufSize)
     {
       bufSize += 1024;
@@ -84,9 +82,11 @@ char *readLine(void)
         exit(EXIT_FAILURE);
       }
     }
+
+    buffer[position] = (char)ch;
+    position++;
   }
 
-  // Null terminerer buffer
   buffer[position] = '\0';
 
   return buffer;
@@ -94,13 +94,14 @@ char *readLine(void)
 
 char **parseLine(char *line)
 {
-  char **tokens = NULL;
+  int bufSize = 64;
   char *currentToken;
+  int position = 0;
+  char **buffer = malloc(bufSize * sizeof(char *));
 
-  tokens = malloc(sizeof(char *));
-  if (tokens == NULL)
+  if (buffer == NULL)
   {
-    fprintf(stderr, "Error allocating memory\n");
+    fprintf(stderr, "Error allocating memory");
     exit(EXIT_FAILURE);
   }
 
@@ -110,29 +111,36 @@ char **parseLine(char *line)
   {
     // Allokerer minne for currentToken
     // Pluss 1 for '\0'
-    tokens[numberOfArgs] = malloc((strlen(currentToken) + 1) * sizeof(char));
-    if (tokens[numberOfArgs] == NULL)
+    buffer[position] = malloc((strlen(currentToken) + 1) * sizeof(char));
+    if (buffer[position] == NULL)
     {
       fprintf(stderr, "Error allocating memory\n");
       exit(EXIT_FAILURE);
     }
 
     // Kopierer token inn til tokens-array
-    strcpy(tokens[numberOfArgs], currentToken);
-    numberOfArgs++;
+    strcpy(buffer[position], currentToken);
+    position++;
 
-    tokens = realloc(tokens, (numberOfArgs + 1) * sizeof(char *));
-    if (tokens == NULL)
+    if (position >= bufSize)
     {
-      fprintf(stderr, "Error allocating memory\n");
-      exit(EXIT_FAILURE);
+      bufSize += 64;
+      buffer = realloc(buffer, bufSize);
+      if (buffer == NULL)
+      {
+        fprintf(stderr, "Error allocating memory");
+        exit(EXIT_FAILURE);
+      }
     }
 
+    numberOfArgs++;
+
+    // Neste token
     currentToken = strtok(NULL, " ");
   }
 
-  tokens[numberOfArgs] = NULL;
-  return tokens;
+  buffer[position] = NULL;
+  return buffer;
 }
 
 void exitShell(void)
@@ -146,6 +154,25 @@ int executeLine(char **tokenizedLine)
   if (strcmp(tokenizedLine[0], "exit") == 0)
   {
     exitShell();
+  }
+
+  // Håndterer cd
+  if (strcmp(tokenizedLine[0], "cd") == 0)
+  {
+
+    if (tokenizedLine[1] == NULL)
+    {
+      fprintf(stderr, "cd: no directory specified");
+    }
+    else
+    {
+
+      if (chdir(tokenizedLine[1]) != 0)
+      {
+        perror("cd failed");
+      }
+    }
+    return 1;
   }
 
   pid_t childPID;
@@ -165,7 +192,20 @@ int executeLine(char **tokenizedLine)
   else
   {
     waitpid(childPID, &status, WUNTRACED);
+    free(tokenizedLine);
   }
 
   return 1;
+}
+
+void freeTokens(char **tokens)
+{
+  if (tokens)
+  {
+    for (int i = 0; i < numberOfArgs; i++)
+    {
+      free(tokens[i]);
+    }
+    free(tokens);
+  }
 }
