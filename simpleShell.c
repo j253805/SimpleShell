@@ -156,6 +156,7 @@ int executeLine(char **tokenizedLine)
   if (strcmp(tokenizedLine[0], "exit") == 0)
   {
     exitShell();
+    return 1;
   }
 
   // Håndterer cd
