@@ -3,6 +3,7 @@
 #include <sys/_types.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/wait.h>
 
 char *readLine(void);
 char **parseLine(char *line);
@@ -72,7 +73,7 @@ char *readLine(void)
   int ch;
   while ((ch = getchar()) != EOF && ch != '\n')
   {
-    if (position > bufSize)
+    if (position >= bufSize)
     {
       bufSize += 1024;
       buffer = realloc(buffer, bufSize);
@@ -109,6 +110,18 @@ char **parseLine(char *line)
   currentToken = strtok(line, " ");
   while (currentToken != NULL)
   {
+
+    if (position >= bufSize)
+    {
+      bufSize += 64;
+      buffer = realloc(buffer, bufSize);
+      if (buffer == NULL)
+      {
+        fprintf(stderr, "Error allocating memory");
+        exit(EXIT_FAILURE);
+      }
+    }
+
     // Allokerer minne for currentToken
     // Pluss 1 for '\0'
     buffer[position] = malloc((strlen(currentToken) + 1) * sizeof(char));
@@ -121,17 +134,6 @@ char **parseLine(char *line)
     // Kopierer token inn til tokens-array
     strcpy(buffer[position], currentToken);
     position++;
-
-    if (position >= bufSize)
-    {
-      bufSize += 64;
-      buffer = realloc(buffer, bufSize);
-      if (buffer == NULL)
-      {
-        fprintf(stderr, "Error allocating memory");
-        exit(EXIT_FAILURE);
-      }
-    }
 
     numberOfArgs++;
 
