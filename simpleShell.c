@@ -192,7 +192,6 @@ int executeLine(char **tokenizedLine)
   else
   {
     waitpid(childPID, &status, WUNTRACED);
-    free(tokenizedLine);
   }
 
   return 1;
