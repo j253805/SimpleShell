@@ -184,7 +184,11 @@ int executeLine(char **tokenizedLine)
   // I barneprosess, vi bryr oss ikke om forelder
   if (childPID == 0)
   {
-    execvp(tokenizedLine[0], tokenizedLine);
+    if (execvp(tokenizedLine[0], tokenizedLine) == -1)
+    {
+      perror("Error executing execvp()");
+      exit(EXIT_FAILURE);
+    }
   }
   else if (childPID < 0)
   {
@@ -193,7 +197,11 @@ int executeLine(char **tokenizedLine)
   }
   else
   {
-    waitpid(childPID, &status, WUNTRACED);
+    if (waitpid(childPID, &status, WUNTRACED) == -1)
+    {
+      perror("Error wating for child");
+      exit(EXIT_FAILURE);
+    }
   }
 
   return 1;
