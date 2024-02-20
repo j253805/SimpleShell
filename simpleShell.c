@@ -35,7 +35,12 @@ int main(void)
       printf("%s@%s %s\n> $ ", userName, hostName, cwd);
       line = readLine();
       tokens = parseLine(line);
-      executeLine(tokens);
+
+      // Sjekker om tokens != NULL og tokens[0] ikke er tom
+      if (tokens && tokens[0])
+      {
+        executeLine(tokens);
+      }
     }
     else
     {
@@ -76,12 +81,14 @@ char *readLine(void)
     if (position >= bufSize)
     {
       bufSize += 1024;
-      buffer = realloc(buffer, bufSize);
-      if (buffer == NULL)
+      char *temp = realloc(buffer, bufSize * sizeof(char));
+      if (temp == NULL)
       {
         fprintf(stderr, "Error reallocating memory\n");
+        free(buffer);
         exit(EXIT_FAILURE);
       }
+      buffer = temp;
     }
 
     buffer[position] = (char)ch;
@@ -166,6 +173,7 @@ int executeLine(char **tokenizedLine)
     if (tokenizedLine[1] == NULL)
     {
       fprintf(stderr, "cd: no directory specified");
+      return 1;
     }
     else
     {
@@ -173,6 +181,7 @@ int executeLine(char **tokenizedLine)
       if (chdir(tokenizedLine[1]) != 0)
       {
         perror("cd failed");
+        exit(EXIT_FAILURE);
       }
     }
     return 1;
@@ -182,7 +191,7 @@ int executeLine(char **tokenizedLine)
   int status;
 
   childPID = fork();
-  // I barneprosess, vi bryr oss ikke om forelder
+  // I barneprosess
   if (childPID == 0)
   {
     if (execvp(tokenizedLine[0], tokenizedLine) == -1)
