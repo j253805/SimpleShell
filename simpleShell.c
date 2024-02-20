@@ -21,7 +21,7 @@ int exitStatus = 1;
 // --------------------------------------------------------
 
 // ############### History functions ##################
-#define HISTORY_SIZE 100
+#define HISTORY_SIZE 5
 
 void addToHistory(char **history, char *line, uint16_t *historyAdditionCount);
 void printHistory(char **history, uint16_t historyAdditionCount);
@@ -260,36 +260,43 @@ void freeTokens(char **tokens)
   }
 }
 
-// TODO: Historie funker nesten godt nå, men når den printes printes også \n karakterer, dette må fikses
-
+// BUG : Når history overskredes skjer noe merkelig med utskriften, test med en liten verdi for
+// HISTORY_SIZE og fiks! Bør være godt nok dersom dette funker
 // En funksjon som legger til kommandoer i en historietabell
 // MaksInnslag == HISTORY_SIZE, tømmer dersom lengden overskrider dette
 void addToHistory(char **history, char *line, uint16_t *historyAdditionCount)
 {
 
-  if (*historyAdditionCount < HISTORY_SIZE)
+  // Dette løste newline problemet, kanskje det skaper bungs senere, vær varsom
+  // Altså ved å sjekke om lengden er over 1, hvis den er det, legg den til
+  int lineLen = strlen(line);
+  if (lineLen > 1)
   {
-    if ((history[*historyAdditionCount] = strdup(line)) == NULL)
+
+    if (*historyAdditionCount <= HISTORY_SIZE)
     {
-      fprintf(stderr, "Error copying string to history");
-      exit(EXIT_FAILURE);
+      if ((history[*historyAdditionCount] = strdup(line)) == NULL)
+      {
+        fprintf(stderr, "Error copying string to history");
+        exit(EXIT_FAILURE);
+      }
+      (*historyAdditionCount)++;
     }
-    (*historyAdditionCount)++;
-  }
-  else
-  {
-    // Shifter tabellen for å gjøre plass til den overflødige kommando
-    for (int i = 0; i < HISTORY_SIZE - 1; i++)
+    else
     {
-      free(history[i]);
-      history[i] = history[i + 1];
+      // Shifter tabellen for å gjøre plass til den overflødige kommando
+      for (int i = 0; i < HISTORY_SIZE - 1; i++)
+      {
+        free(history[i]);
+        history[i] = history[i + 1];
+      }
+      if ((history[HISTORY_SIZE - 1] = strdup(line)) == NULL)
+      {
+        fprintf(stderr, "Error copying string to history");
+        exit(EXIT_FAILURE);
+      }
+      (*historyAdditionCount) -= 1;
     }
-    if ((history[HISTORY_SIZE - 1] = strdup(line)) == NULL)
-    {
-      fprintf(stderr, "Error copying string to history");
-      exit(EXIT_FAILURE);
-    }
-    (*historyAdditionCount) -= 1;
   }
 }
 
@@ -304,10 +311,11 @@ void deleteHistory(char **history, uint16_t *historyAdditionCount)
 
 void printHistory(char **history, uint16_t historyAdditionCount)
 {
-
-  for (int i = 0; i < historyAdditionCount; i++)
+  // Off-set dropper å skrive ut nyeste kommando, som alltids vil være "history"
+  for (int i = 0; i < historyAdditionCount - 1; i++)
   {
-    printf("%s\n", history[i]);
+    // (i+1) er posisjon 1 indexert
+    printf("%d  %s\n", (i + 1), history[i]);
   }
   printf("\n");
 }
