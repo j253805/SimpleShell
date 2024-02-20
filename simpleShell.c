@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sys/wait.h>
 
+// ############### General shell functions ############
 char *readLine(void);
 char **parseLine(char *line);
 void exitShell(void);
@@ -14,6 +15,21 @@ void freeTokens(char **tokens);
 // Globale variabler, refaktorerer kanskje program slik at disse ikke blir nødvendige
 int numberOfArgs = 0;
 int exitStatus = 1;
+
+// ############### General shell functions ############
+
+// --------------------------------------------------------
+
+// ############### History functions ##################
+#define HISTORY_SIZE 100
+
+void addToHistory(char **history, char *line, uint16_t *historyAdditionCount);
+void printHistory(char **history, uint16_t historyAdditionCount);
+void deleteHistory(char **history, uint16_t *historyAdditionCount);
+
+char *history[HISTORY_SIZE];
+uint16_t historyAdditionCount = 0;
+// ############### History functions ##################
 
 int main(void)
 {
@@ -34,6 +50,7 @@ int main(void)
     {
       printf("%s@%s %s\n> $ ", userName, hostName, cwd);
       line = readLine();
+      addToHistory(history, line, &historyAdditionCount);
       tokens = parseLine(line);
 
       // Sjekker om tokens != NULL og tokens[0] ikke er tom
@@ -159,6 +176,20 @@ void exitShell(void)
 
 int executeLine(char **tokenizedLine)
 {
+
+  // Om histories skal printes
+  if (strcmp(tokenizedLine[0], "history") == 0)
+  {
+    printHistory(history, historyAdditionCount);
+    return 1;
+    // Om historie skal slettes
+  }
+  else if (strcmp(tokenizedLine[0], "delete") == 0 && strcmp(tokenizedLine[1], "history") == 0)
+  {
+    deleteHistory(history, &historyAdditionCount);
+    printf("history deleted\n");
+    return 1;
+  }
   // Om program skal avsluttes
   if (strcmp(tokenizedLine[0], "exit") == 0)
   {
@@ -227,4 +258,56 @@ void freeTokens(char **tokens)
     }
     free(tokens);
   }
+}
+
+// TODO: Historie funker nesten godt nå, men når den printes printes også \n karakterer, dette må fikses
+
+// En funksjon som legger til kommandoer i en historietabell
+// MaksInnslag == HISTORY_SIZE, tømmer dersom lengden overskrider dette
+void addToHistory(char **history, char *line, uint16_t *historyAdditionCount)
+{
+
+  if (*historyAdditionCount < HISTORY_SIZE)
+  {
+    if ((history[*historyAdditionCount] = strdup(line)) == NULL)
+    {
+      fprintf(stderr, "Error copying string to history");
+      exit(EXIT_FAILURE);
+    }
+    (*historyAdditionCount)++;
+  }
+  else
+  {
+    // Shifter tabellen for å gjøre plass til den overflødige kommando
+    for (int i = 0; i < HISTORY_SIZE - 1; i++)
+    {
+      free(history[i]);
+      history[i] = history[i + 1];
+    }
+    if ((history[HISTORY_SIZE - 1] = strdup(line)) == NULL)
+    {
+      fprintf(stderr, "Error copying string to history");
+      exit(EXIT_FAILURE);
+    }
+    (*historyAdditionCount) -= 1;
+  }
+}
+
+void deleteHistory(char **history, uint16_t *historyAdditionCount)
+{
+  for (int i = 0; i < *historyAdditionCount; i++)
+  {
+    free(history[i]);
+  }
+  *historyAdditionCount = 0;
+}
+
+void printHistory(char **history, uint16_t historyAdditionCount)
+{
+
+  for (int i = 0; i < historyAdditionCount; i++)
+  {
+    printf("%s\n", history[i]);
+  }
+  printf("\n");
 }
