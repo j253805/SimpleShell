@@ -5,10 +5,14 @@
 #include <string.h>
 #include <sys/wait.h>
 
+// ########### Egendefinerte header filer #############
+#include "history.h"
+#include "utilityAndStatus.h"
+// ########### Egendefinerte header filer #############
+
 // ############### General shell functions ############
 char *readLine(void);
 char **parseLine(char *line);
-void exitShell(void);
 int executeLine(char **tokenizedLine);
 void freeTokens(char **tokens);
 
@@ -20,16 +24,12 @@ int exitStatus = 1;
 
 // --------------------------------------------------------
 
-// ############### History functions ##################
-#define HISTORY_SIZE 5
-
-void addToHistory(char **history, char *line, uint16_t *historyAdditionCount);
-void printHistory(char **history, uint16_t historyAdditionCount);
-void deleteHistory(char **history, uint16_t *historyAdditionCount);
+// ############### History variables ##################
 
 char *history[HISTORY_SIZE];
 uint16_t historyAdditionCount = 0;
-// ############### History functions ##################
+
+// ############### History variables ##################
 
 int main(void)
 {
@@ -130,7 +130,6 @@ char **parseLine(char *line)
     exit(EXIT_FAILURE);
   }
 
-  // int tokenIndex = 0;
   currentToken = strtok(line, " ");
   while (currentToken != NULL)
   {
@@ -138,12 +137,14 @@ char **parseLine(char *line)
     if (position >= bufSize)
     {
       bufSize += 64;
-      buffer = realloc(buffer, bufSize);
-      if (buffer == NULL)
+      char **temp = realloc(buffer, bufSize);
+      if (temp == NULL)
       {
         fprintf(stderr, "Error allocating memory");
+        free(buffer);
         exit(EXIT_FAILURE);
       }
+      buffer = temp;
     }
 
     // Allokerer minne for currentToken
@@ -169,11 +170,6 @@ char **parseLine(char *line)
   return buffer;
 }
 
-void exitShell(void)
-{
-  exitStatus = 0;
-}
-
 int executeLine(char **tokenizedLine)
 {
 
@@ -193,7 +189,7 @@ int executeLine(char **tokenizedLine)
   // Om program skal avsluttes
   if (strcmp(tokenizedLine[0], "exit") == 0)
   {
-    exitShell();
+    exitShell(&exitStatus);
     return 1;
   }
 
@@ -258,64 +254,4 @@ void freeTokens(char **tokens)
     }
     free(tokens);
   }
-}
-
-// BUG : Når history overskredes skjer noe merkelig med utskriften, test med en liten verdi for
-// HISTORY_SIZE og fiks! Bør være godt nok dersom dette funker
-// En funksjon som legger til kommandoer i en historietabell
-// MaksInnslag == HISTORY_SIZE, tømmer dersom lengden overskrider dette
-void addToHistory(char **history, char *line, uint16_t *historyAdditionCount)
-{
-
-  // Dette løste newline problemet, kanskje det skaper bungs senere, vær varsom
-  // Altså ved å sjekke om lengden er over 1, hvis den er det, legg den til
-  int lineLen = strlen(line);
-  if (lineLen > 1)
-  {
-
-    if (*historyAdditionCount <= HISTORY_SIZE)
-    {
-      if ((history[*historyAdditionCount] = strdup(line)) == NULL)
-      {
-        fprintf(stderr, "Error copying string to history");
-        exit(EXIT_FAILURE);
-      }
-      (*historyAdditionCount)++;
-    }
-    else
-    {
-      // Shifter tabellen for å gjøre plass til den overflødige kommando
-      for (int i = 0; i < HISTORY_SIZE - 1; i++)
-      {
-        free(history[i]);
-        history[i] = history[i + 1];
-      }
-      if ((history[HISTORY_SIZE - 1] = strdup(line)) == NULL)
-      {
-        fprintf(stderr, "Error copying string to history");
-        exit(EXIT_FAILURE);
-      }
-      (*historyAdditionCount) -= 1;
-    }
-  }
-}
-
-void deleteHistory(char **history, uint16_t *historyAdditionCount)
-{
-  for (int i = 0; i < *historyAdditionCount; i++)
-  {
-    free(history[i]);
-  }
-  *historyAdditionCount = 0;
-}
-
-void printHistory(char **history, uint16_t historyAdditionCount)
-{
-  // Off-set dropper å skrive ut nyeste kommando, som alltids vil være "history"
-  for (int i = 0; i < historyAdditionCount - 1; i++)
-  {
-    // (i+1) er posisjon 1 indexert
-    printf("%d  %s\n", (i + 1), history[i]);
-  }
-  printf("\n");
 }
