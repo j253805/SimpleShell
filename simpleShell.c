@@ -26,7 +26,8 @@ int exitStatus = 1;
 
 // ############### History variables ##################
 
-char *history[HISTORY_SIZE];
+// char *history[HISTORY_SIZE];
+char **history = NULL;
 uint16_t historyAdditionCount = 0;
 
 // ############### History variables ##################
@@ -50,7 +51,7 @@ int main(void)
     {
       printf("%s@%s %s\n> $ ", userName, hostName, cwd);
       line = readLine();
-      addToHistory(history, line, &historyAdditionCount);
+      addToHistory(&history, line, &historyAdditionCount);
       tokens = parseLine(line);
 
       // Sjekker om tokens != NULL og tokens[0] ikke er tom
@@ -182,7 +183,7 @@ int executeLine(char **tokenizedLine)
   }
   else if (strcmp(tokenizedLine[0], "delete") == 0 && strcmp(tokenizedLine[1], "history") == 0)
   {
-    deleteHistory(history, &historyAdditionCount);
+    emptyHistory(history, &historyAdditionCount);
     printf("history deleted\n");
     return 1;
   }
@@ -234,11 +235,7 @@ int executeLine(char **tokenizedLine)
   }
   else
   {
-    if (waitpid(childPID, &status, WUNTRACED) == -1)
-    {
-      perror("Error wating for child");
-      exit(EXIT_FAILURE);
-    }
+    waitpid(childPID, &status, WUNTRACED);
   }
 
   return 1;

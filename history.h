@@ -6,61 +6,44 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define HISTORY_SIZE 3
+#define HISTORY_SIZE 10000
 
 // Function prototypes
-void addToHistory(char **history, char *line, uint16_t *historyAdditionCount);
-void deleteHistory(char **history, uint16_t *historyAdditionCount);
+void addToHistory(char ***history, char *line, uint16_t *historyAdditionCount);
+void emptyHistory(char **history, uint16_t *historyAdditionCount);
 void printHistory(char **history, uint16_t historyAdditionCount);
 
-// TODO: BUG, dobbelfrigjøring av minne i "line", dette må fikses. Det frigjøres her dersom
-// Historiegrensen overskredes, og i hovedløkka i simpleShell.c etter hver iterasjon
-//  MaksInnslag == HISTORY_SIZE, tømmer dersom lengden overskrider dette
-void addToHistory(char **history, char *line, uint16_t *historyAdditionCount)
+void addToHistory(char ***history, char *line, uint16_t *historyAdditionCount)
 {
+    int lineLength = strlen(line);
 
-    // Dette løste newline problemet, kanskje det skaper bungs senere, vær varsom
-    // Altså ved å sjekke om lengden er over 1, hvis den er det, legg den til
-    int lineLen = strlen(line);
-    if (lineLen > 1)
+    // Reallocate memory for the history array
+    *history = (char **)realloc(*history, (*historyAdditionCount + 1) * sizeof(char *));
+    if (*history == NULL)
     {
-
-        if (*historyAdditionCount <= HISTORY_SIZE)
-        {
-            if ((history[*historyAdditionCount] = strdup(line)) == NULL)
-            {
-                fprintf(stderr, "Error copying string to history");
-                exit(EXIT_FAILURE);
-            }
-            (*historyAdditionCount)++;
-        }
-        else
-        {
-            // Shifter tabellen for å gjøre plass til den overflødige kommando
-            for (int i = 0; i < HISTORY_SIZE - 1; i++)
-            {
-                if (history[i] != line && history[i] != NULL)
-                {
-                    free(history[i]);
-                    history[i] = NULL;
-                }
-                history[i] = history[i + 1];
-            }
-            if ((history[HISTORY_SIZE - 1] = strdup(line)) == NULL)
-            {
-                fprintf(stderr, "Error copying string to history");
-                exit(EXIT_FAILURE);
-            }
-            (*historyAdditionCount) -= 1;
-        }
+        fprintf(stderr, "Error reallocating memory\n");
+        exit(EXIT_FAILURE);
     }
+
+    // Allocate memory for the line in the array
+    (*history)[*historyAdditionCount] = malloc((lineLength + 1) * sizeof(char));
+    if ((*history)[*historyAdditionCount] == NULL)
+    {
+        fprintf(stderr, "Error allocating memory\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Copy the line into the array
+    strcpy((*history)[*historyAdditionCount], line);
+    (*historyAdditionCount)++;
 }
 
-void deleteHistory(char **history, uint16_t *historyAdditionCount)
+void emptyHistory(char **history, uint16_t *historyAdditionCount)
 {
     for (int i = 0; i < *historyAdditionCount; i++)
     {
         free(history[i]);
+        history[i] = NULL;
     }
     *historyAdditionCount = 0;
 }
