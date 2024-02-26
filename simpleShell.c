@@ -18,8 +18,6 @@ void freeTokens(char **tokens);
 
 // Globale variabler, refaktorerer kanskje program slik at disse ikke blir nødvendige
 int numberOfArgs = 0;
-int exitStatus = 1;
-
 // ############### General shell functions ############
 
 // --------------------------------------------------------
@@ -43,7 +41,7 @@ int main(void)
 
   char *line;
   char **tokens;
-
+  int status = 1;
   do
   {
     // Henter nåværende arbeidskatalog
@@ -57,7 +55,7 @@ int main(void)
       // Sjekker om tokens != NULL og tokens[0] ikke er tom
       if (tokens && tokens[0])
       {
-        executeLine(tokens);
+        status = executeLine(tokens);
       }
     }
     else
@@ -75,7 +73,7 @@ int main(void)
     // Frigjør minne
     free(line);
     freeTokens(tokens);
-  } while (exitStatus);
+  } while (status);
 
   return 0;
 }
@@ -190,8 +188,8 @@ int executeLine(char **tokenizedLine)
   // Om program skal avsluttes
   if (strcmp(tokenizedLine[0], "exit") == 0)
   {
-    exitShell(&exitStatus);
-    return 1;
+    // Brukes i status variabel
+    return 0;
   }
 
   // Håndterer cd
