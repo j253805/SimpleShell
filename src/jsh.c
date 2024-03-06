@@ -6,8 +6,8 @@
 #include <sys/wait.h>
 
 // ########### Egendefinerte header filer #############
-#include "history.h"
-#include "utilityAndStatus.h"
+#include "../headers/history.h"
+#include "../headers/utilityAndStatus.h"
 // ########### Egendefinerte header filer #############
 
 // ############### General shell functions ############

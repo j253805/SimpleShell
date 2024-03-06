@@ -17,25 +17,28 @@ void addToHistory(char ***history, char *line, uint16_t *historyAdditionCount)
 {
     int lineLength = strlen(line);
 
-    // Reallocate memory for the history array
-    *history = (char **)realloc(*history, (*historyAdditionCount + 1) * sizeof(char *));
-    if (*history == NULL)
+    if (!(lineLength <= 1 || line[0] == '\n' || line[1] == '\0'))
     {
-        fprintf(stderr, "Error reallocating memory\n");
-        exit(EXIT_FAILURE);
-    }
+        // Reallocate memory for the history array
+        *history = (char **)realloc(*history, (*historyAdditionCount + 1) * sizeof(char *));
+        if (*history == NULL)
+        {
+            fprintf(stderr, "Error reallocating memory\n");
+            exit(EXIT_FAILURE);
+        }
 
-    // Allocate memory for the line in the array
-    (*history)[*historyAdditionCount] = malloc((lineLength + 1) * sizeof(char));
-    if ((*history)[*historyAdditionCount] == NULL)
-    {
-        fprintf(stderr, "Error allocating memory\n");
-        exit(EXIT_FAILURE);
-    }
+        // Allocate memory for the line in the array
+        (*history)[*historyAdditionCount] = malloc((lineLength + 1) * sizeof(char));
+        if ((*history)[*historyAdditionCount] == NULL)
+        {
+            fprintf(stderr, "Error allocating memory\n");
+            exit(EXIT_FAILURE);
+        }
 
-    // Copy the line into the array
-    strcpy((*history)[*historyAdditionCount], line);
-    (*historyAdditionCount)++;
+        // Copy the line into the array
+        strcpy((*history)[*historyAdditionCount], line);
+        (*historyAdditionCount)++;
+    }
 }
 
 void emptyHistory(char **history, uint16_t *historyAdditionCount)
