@@ -42,6 +42,7 @@ int main(void)
   char *line;
   char **tokens;
   int status = 1;
+  int directionalArrowCheck = 0;
   do
   {
     // Henter nåværende arbeidskatalog
